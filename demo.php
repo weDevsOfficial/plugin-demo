@@ -308,7 +308,12 @@ class WeDevs_Plugin_Demo {
         </div>
         <style>
             .welcome-panel { margin-top: 30px; }
-            h1 { display: none; }
+
+            h1,
+            .welcome-panel .error {
+                display: none;
+            }
+
             ul.wedevs-products {
                 width: 100%;
                 overflow: hidden;
