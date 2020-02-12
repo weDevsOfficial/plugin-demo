@@ -61,6 +61,9 @@ class WeDevs_Plugin_Demo {
         add_action( 'woocommerce_login_form_start', array( $this, 'login_message' ) );
         add_action( 'admin_head', [ $this, 'remove_help_tabs' ] );
 
+        add_action( 'admin_menu', array( $this, 'remove_menu_items' ) );
+        add_action( 'wp_loaded', array( $this, 'cheatin' ) );
+
         add_action( 'admin_init', array( $this, 'admin_init' ), 11 );
         add_filter( 'login_redirect', array( $this, 'redirect' ) );
 
@@ -90,7 +93,7 @@ class WeDevs_Plugin_Demo {
 
         if ( defined( 'DISABLE_SETTINGS' ) && DISABLE_SETTINGS == true ) {
             if ( in_array( $cap, [
-                    'manage_options',
+                    // 'manage_options',
                     'update_core',
                     'edit_files',
                 ] ) ) {
@@ -452,6 +455,73 @@ class WeDevs_Plugin_Demo {
         $wp_admin_bar->remove_menu( 'comments' );
         $wp_admin_bar->remove_menu( 'user-info' );
         $wp_admin_bar->remove_menu( 'edit-profile' );
+    }
+
+    /**
+     * Remove certain menu items from view so demo user cannot mess with them.
+     *
+     * @since 1.0.0
+     *
+     * @global array $menu Current array of menu items
+     */
+    public function remove_menu_items() {
+
+        global $menu;
+        end( $menu );
+
+        /** Remove the first menu separator */
+        unset( $menu[4] );
+
+        /** Now remove the menu items we don't want our user to see */
+        $remove_menu_items = array(
+            __( 'Profile' ),
+            __( 'Tools'),
+        );
+
+        if ( defined( 'DISABLE_SETTINGS' ) && DISABLE_SETTINGS == true ) {
+            $remove_menu_items[] = __( 'Settings' );
+        }
+
+        while ( prev( $menu ) ) {
+            $item = explode( ' ', $menu[key( $menu )][0] );
+            if ( in_array( $item[0] != null ? $item[0] : '', $remove_menu_items ) )
+                unset( $menu[key( $menu )] );
+        }
+
+    }
+
+    /**
+     * Make sure users don't try to access an admin page that they shouldn't.
+     *
+     * @since 1.0.0
+     *
+     * @global string $pagenow The current page slug
+     */
+    public function cheatin() {
+
+        global $pagenow;
+
+        /** Paranoia security to make sure the demo user cannot access any page other than what we specify */
+        $not_allowed = array(
+            'link-manager.php',
+            'link-add.php',
+            'theme-editor.php',
+            'plugins.php',
+            'plugin-install.php',
+            'plugin-editor.php',
+            'profile.php',
+        );
+
+        if ( defined( 'DISABLE_SETTINGS' ) && DISABLE_SETTINGS == true ) {
+            $not_allowed[] = 'options-general.php';
+        }
+
+        /** If we find a user is trying to access a forbidden page, redirect them back to the dashboard */
+        if ( in_array( $pagenow, $not_allowed ) ) {
+            wp_safe_redirect( get_admin_url() );
+            exit;
+        }
+
     }
 
     /**
