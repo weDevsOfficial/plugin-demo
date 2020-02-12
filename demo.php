@@ -10,6 +10,14 @@ License: GNU General Public License v2.0 or later
 License URI: http://www.opensource.org/licenses/gpl-license.php
 */
 
+/*
+define( 'DISABLE_THEME', true );
+define( 'DISABLE_USERS', true );
+define( 'DISABLE_SETTINGS', true );
+define( 'DISABLE_TOOLS', true );
+define( 'DISABLE_PLUGINS', true );
+ */
+
 /**
  * Demo class for the weDevs plugins.
  *
@@ -39,7 +47,7 @@ class WeDevs_Plugin_Demo {
         /** Hook everything into plugins_loaded */
         add_action( 'plugins_loaded', array( $this, 'init' ) );
 
-        register_activation_hook( __FILE__, array( $this, 'remove_capabilities' ) );
+        register_activation_hook( __FILE__, array( $this, 'create_user' ) );
     }
 
     /**
@@ -53,69 +61,95 @@ class WeDevs_Plugin_Demo {
         add_action( 'woocommerce_login_form_start', array( $this, 'login_message' ) );
         add_action( 'admin_head', [ $this, 'remove_help_tabs' ] );
 
-        /** Don't process anything unless the current user is a demo user */
-        // if ( $this->is_demo_user() ) {
+        add_action( 'admin_init', array( $this, 'admin_init' ), 11 );
+        add_filter( 'login_redirect', array( $this, 'redirect' ) );
 
-            /** Load hooks and filters */
-            add_action( 'wp_loaded', array( $this, 'cheatin' ) );
-            add_action( 'admin_init', array( $this, 'admin_init' ), 11 );
-            add_filter( 'login_redirect', array( $this, 'redirect' ) );
+        add_action( 'wp_dashboard_setup', array( $this, 'remove_dashboard_widgets' ), 11 );
 
-            add_action( 'wp_dashboard_setup', array( $this, 'remove_dashboard_widgets' ), 11 );
-
-            add_action( 'admin_notices', [ $this, 'product_widget' ] );
-            // add_action( 'welcome_panel', [ $this, 'product_widget' ] );
-
-            add_action( 'admin_menu', array( $this, 'remove_menu_items' ) );
-            // add_action( 'admin_notices', array( $this, 'notices' ) );
-            // add_action( 'untrashed_post', array( $this, 'trash' ) );
-            add_action( 'wp_before_admin_bar_render', array( $this, 'admin_bar' ) );
-            // add_action( 'admin_footer', array( $this, 'jquery' ) );
-            add_filter( 'admin_footer_text', array( $this, 'footer' ) );
-
-            // add_action( 'delete_attachment', array( $this, 'die_access' ) );
-            // add_action( 'wp_trash_post', array( $this, 'die_access' ) );
-            // add_action( 'before_delete_post', array( $this, 'die_access' ) );
-
-            // remove trash row actions
-            // add_filter( 'page_row_actions', [ $this, 'remove_trash_row_actions' ], 10, 2 );
-            // add_filter( 'post_row_actions', [ $this, 'remove_trash_row_actions' ], 10, 2 );
-            // add_filter( 'product_row_actions', [ $this, 'remove_trash_row_actions' ], 10, 2 );
-        // }
+        add_action( 'admin_notices', [ $this, 'product_widget' ] );
+        add_action( 'wp_before_admin_bar_render', array( $this, 'admin_bar' ) );
+        add_filter( 'admin_footer_text', array( $this, 'footer' ) );
 
         add_filter( 'login_message', array( $this, 'login_message' ) );
+        add_filter( 'map_meta_cap', [ $this, 'remove_caps' ], 10, 2 );
+    }
+
+    public function remove_caps( $caps, $cap ) {
+
+        if ( defined( 'DISABLE_THEME' ) && DISABLE_THEME == true ) {
+            if ( in_array( $cap, [
+                    'switch_themes',
+                    'edit_theme_options',
+                    'update_themes',
+                    'edit_themes',
+                    'upload_files',
+                ] ) ) {
+                $caps = ['do_not_allow'];
+            }
+        }
+
+        if ( defined( 'DISABLE_SETTINGS' ) && DISABLE_SETTINGS == true ) {
+            if ( in_array( $cap, [
+                    'manage_options',
+                    'update_core',
+                    'edit_files',
+                ] ) ) {
+                $caps = ['do_not_allow'];
+            }
+        }
+
+        if ( defined( 'DISABLE_TOOLS' ) && DISABLE_TOOLS == true ) {
+            if ( in_array( $cap, [
+                    'erase_others_personal_data',
+                    'export_others_personal_data',
+                    'import',
+                    'export',
+                    'view_site_health_checks',
+                ] ) ) {
+                $caps = ['do_not_allow'];
+            }
+        }
+
+        if ( defined( 'DISABLE_PLUGINS' ) && DISABLE_PLUGINS == true ) {
+            if ( in_array( $cap, [
+                    'upload_plugins',
+                    'install_plugins',
+                    'delete_plugins',
+                    'update_plugins',
+                    'edit_plugins',
+                    'activate_plugins',
+                ] ) ) {
+                $caps = ['do_not_allow'];
+            }
+        }
+
+        if ( defined( 'DISABLE_USERS' ) && DISABLE_USERS == true ) {
+            if ( in_array( $cap, [
+                'list_users',
+                'edit_users',
+                'add_users',
+                'create_users',
+                'delete_users',
+                'promote_users',
+                'remove_users',
+            ] ) ) {
+                $caps = ['do_not_allow'];
+            }
+        }
+
+        return $caps;
     }
 
     function die_access() {
         wp_die( 'Sorry, you can not delete in demo mode!' );
     }
 
-    public function remove_capabilities() {
-        $user = get_role( 'administrator' );
-
-        // update capabitilies
-        $user->remove_cap( 'update_core' );
-        $user->remove_cap( 'edit_files' );
-
-        // plugin capabilities
-        $user->remove_cap( 'install_plugins' );
-        $user->remove_cap( 'update_plugins' );
-        $user->remove_cap( 'edit_plugins' );
-        $user->remove_cap( 'upload_plugins' );
-        $user->remove_cap( 'delete_plugins' );
-
-        // user capabilities
-        $user->remove_cap( 'create_users' );
-        $user->remove_cap( 'promote_users' );
-        $user->remove_cap( 'remove_users' );
-
-        // theme capabilities
-        $user->remove_cap( 'install_themes' );
-        $user->remove_cap( 'update_themes' );
-        $user->remove_cap( 'delete_themes' );
-        $user->remove_cap( 'edit_themes' );
-        $user->add_cap( 'edit_theme_options' );
-
+    /**
+     * Create the default demo user on activation
+     *
+     * @return void
+     */
+    public function create_user() {
         // reset the demo user password
         $demo_user = get_user_by( 'login', 'demo' );
 
@@ -133,59 +167,6 @@ class WeDevs_Plugin_Demo {
     function remove_help_tabs() {
         $screen = get_current_screen();
         $screen->remove_help_tabs();
-    }
-
-    /**
-     * Make sure users don't try to access an admin page that they shouldn't.
-     *
-     * @since 1.0.0
-     *
-     * @global string $pagenow The current page slug
-     */
-    public function cheatin() {
-
-        global $pagenow;
-
-        /** Paranoia security to make sure the demo user cannot access any page other than what we specify */
-        $not_allowed = array(
-            'update-core.php',
-            'link-manager.php',
-            'link-add.php',
-            'theme-editor.php',
-            'plugins.php',
-            'plugin-install.php',
-            'plugin-editor.php',
-            'users.php',
-            'tools.php',
-            'user-new.php',
-            'profile.php',
-            'options-general.php',
-            'options-permalink.php'
-        );
-
-        /** If we find a user is trying to access a forbidden page, redirect them back to the dashboard */
-        if ( in_array( $pagenow, $not_allowed ) ) {
-            wp_safe_redirect( get_admin_url() );
-            exit;
-        }
-
-    }
-
-    /**
-     * Remove row trash action link for demo user
-     *
-     * @param  array $actions
-     * @param  WP_Post $post
-     *
-     * @return array
-     */
-    public function remove_trash_row_actions( $actions, $post ) {
-
-        if ( $post->post_author != get_current_user_id() ) {
-            unset( $actions['trash'] );
-        }
-
-        return $actions;
     }
 
     /**
@@ -409,7 +390,6 @@ class WeDevs_Plugin_Demo {
         $message .= '</div>';
 
         echo $message;
-
     }
 
     /**
@@ -455,39 +435,6 @@ class WeDevs_Plugin_Demo {
     }
 
     /**
-     * Remove certain menu items from view so demo user cannot mess with them.
-     *
-     * @since 1.0.0
-     *
-     * @global array $menu Current array of menu items
-     */
-    public function remove_menu_items() {
-
-        global $menu;
-        end( $menu );
-
-        /** Remove the first menu separator */
-        unset( $menu[4] );
-
-        /** Now remove the menu items we don't want our user to see */
-        $remove_menu_items = array(
-            __( 'Profile' ),
-            __( 'Users' ),
-            __( 'Plugins' ),
-            __( 'Tools'),
-            __( 'Settings' ),
-            // __( 'Appearance' )
-        );
-
-        while ( prev( $menu ) ) {
-            $item = explode( ' ', $menu[key( $menu )][0] );
-            if ( in_array( $item[0] != null ? $item[0] : '', $remove_menu_items ) )
-                unset( $menu[key( $menu )] );
-        }
-
-    }
-
-    /**
      * Modify the admin bar to remove unnecessary links.
      *
      * @since 1.0.0
@@ -508,29 +455,6 @@ class WeDevs_Plugin_Demo {
     }
 
     /**
-     * We can't filter the Profile URL for the main account link in the admin bar, so we
-     * replace it using jQuery instead. We also remove the "+ New" item from the admin bar.
-     *
-     * This method also adds some extra text to spice up the currently empty dashboard area.
-     * Call it plugin marketing if you will. :-)
-     *
-     * @since 1.0.0
-     */
-    public function jquery() {
-
-        ?>
-        <script type="text/javascript">
-            jQuery(document).ready(function($){
-                /** Remove items from the admin bar first */
-                $('#wp-admin-bar-my-account a:first').attr('href', '<?php echo get_admin_url(); ?>');
-                $('#wp-admin-bar-view').remove();
-            });
-        </script>
-        <?php
-
-    }
-
-    /**
      * Modify the footer text for the demo area.
      *
      * @since 1.0.0
@@ -542,26 +466,6 @@ class WeDevs_Plugin_Demo {
         $source = str_replace( ['http://', 'https://'], [ '', '' ], site_url() );
 
         return sprintf( __( 'You are currently enjoying a demo of our product. Want the real thing? <a href="%s" title="Click here to purchase a license!" target="_blank">Click here to purchase a license!</a>' ), 'https://wedevs.com/products/?utm_source=' . $source . '&utm_medium=wp_dashboard_footer&utm_campaign=Plugin+Demo' );
-    }
-
-    /**
-     * Helper function for determining whether the current user is a demo user or not.
-     *
-     * @since 1.0.0
-     *
-     * @return bool Whether or not the user is a demo
-     */
-    private function is_demo_user() {
-
-        return true;
-
-        $current_user = wp_get_current_user();
-
-        if ( $current_user->user_login == 'demo' ) {
-            return true;
-        }
-
-        return false;
     }
 
 }
