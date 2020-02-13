@@ -11,6 +11,14 @@ License URI: http://www.opensource.org/licenses/gpl-license.php
 */
 
 /*
+define( 'WP_DEBUG', false );
+define( 'WP_DEBUG_LOG', false );
+define( 'WP_DEBUG_DISPLAY', false );
+define( 'WP_SITEURL', 'https://site.com' );
+define( 'WP_HOME', 'https://site.com' );
+define( 'WP_AUTO_UPDATE_CORE', true );
+define( 'DISALLOW_FILE_EDIT', true );
+
 define( 'DISABLE_THEME', true );
 define( 'DISABLE_USERS', true );
 define( 'DISABLE_SETTINGS', true );
@@ -505,10 +513,6 @@ class WeDevs_Plugin_Demo {
         $not_allowed = array(
             'link-manager.php',
             'link-add.php',
-            'theme-editor.php',
-            'plugins.php',
-            'plugin-install.php',
-            'plugin-editor.php',
             'profile.php',
         );
 
