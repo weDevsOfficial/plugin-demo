@@ -11,7 +11,7 @@ mkdir wp-content/mu-plugins
 Download the plugin into mu-plugin
 
 ```bash
-wget https://raw.githubusercontent.com/weDevsOfficial/plugin-demo/master/demo.php wp-content/mu-plugins/
+wget https://raw.githubusercontent.com/weDevsOfficial/plugin-demo/master/demo.php -O wp-content/mu-plugins/demo.php
 ```
 
 
